@@ -1,0 +1,134 @@
+@startuml CodeFirst Use Case Diagram
+
+title CodeFirst: System Use Cases
+
+left to right direction
+
+actor "End User" as User
+actor "AI Agent" as Agent
+actor "Developer" as Dev
+actor "System Administrator" as Admin
+
+rectangle "CodeFirst Platform" {
+    
+    package "User Interaction" {
+        usecase "View Application UI" as UC1
+        usecase "Input Data" as UC2
+        usecase "Navigate Interface" as UC3
+        usecase "Receive Visual Feedback" as UC4
+        usecase "Execute Commands" as UC5
+    }
+    
+    package "AI Agent Services" {
+        usecase "Analyze User Intent" as UC6
+        usecase "Process Natural Language" as UC7
+        usecase "Generate Responses" as UC8
+        usecase "Maintain Context" as UC9
+        usecase "Provide Recommendations" as UC10
+    }
+    
+    package "Application Development" {
+        usecase "Integrate Legacy Framework" as UC11
+        usecase "Implement Business Logic" as UC12
+        usecase "Define SHACL Shapes" as UC13
+        usecase "Configure Wayland Server" as UC14
+        usecase "Deploy Application" as UC15
+    }
+    
+    package "Data Management" {
+        usecase "Query Database" as UC16
+        usecase "Process Data" as UC17
+        usecase "Generate Visualizations" as UC18
+        usecase "Export Reports" as UC19
+    }
+    
+    package "System Administration" {
+        usecase "Monitor Performance" as UC20
+        usecase "Manage LLM Services" as UC21
+        usecase "Configure Security" as UC22
+        usecase "Scale Services" as UC23
+    }
+    
+    package "Communication" {
+        usecase "Send JSON-RPC-LD Messages" as UC24
+        usecase "Validate Message Schemas" as UC25
+        usecase "Share Wayland Buffers" as UC26
+        usecase "Manage WebSocket Connections" as UC27
+    }
+}
+
+' User relationships
+User --> UC1
+User --> UC2
+User --> UC3
+User --> UC4
+User --> UC5
+
+' Agent relationships
+Agent --> UC6
+Agent --> UC7
+Agent --> UC8
+Agent --> UC9
+Agent --> UC10
+
+' Developer relationships
+Dev --> UC11
+Dev --> UC12
+Dev --> UC13
+Dev --> UC14
+Dev --> UC15
+
+' Admin relationships
+Admin --> UC20
+Admin --> UC21
+Admin --> UC22
+Admin --> UC23
+
+' Internal relationships
+UC5 ..> UC24 : <<uses>>
+UC6 ..> UC7 : <<includes>>
+UC6 ..> UC9 : <<includes>>
+UC8 ..> UC24 : <<uses>>
+UC12 ..> UC16 : <<uses>>
+UC12 ..> UC17 : <<uses>>
+UC17 ..> UC18 : <<uses>>
+UC18 ..> UC26 : <<uses>>
+UC24 ..> UC25 : <<includes>>
+UC24 ..> UC27 : <<uses>>
+UC4 ..> UC26 : <<uses>>
+
+' Cross-actor relationships
+UC6 ..> UC2 : <<triggered by>>
+UC8 ..> UC4 : <<results in>>
+UC15 ..> UC14 : <<includes>>
+UC15 ..> UC13 : <<includes>>
+
+note right of UC6
+  **AI Agent Core Function**
+  Analyzes user input using
+  LLM services and semantic
+  context from JSON-RPC-LD
+end note
+
+note right of UC24
+  **Semantic Communication**
+  All messages include @context
+  for explicit semantic meaning
+  and SHACL validation
+end note
+
+note right of UC26
+  **Efficient Rendering**
+  Direct buffer sharing via
+  Wayland protocol eliminates
+  unnecessary data copying
+end note
+
+note bottom of UC11
+  **Framework Integration**
+  Supports Rails, Laravel,
+  Express, Flask, Django
+  in multiple languages
+end note
+
+@enduml

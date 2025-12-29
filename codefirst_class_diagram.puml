@@ -1,0 +1,232 @@
+@startuml CodeFirst Class Diagram
+
+title CodeFirst: Core Class Structure
+
+skinparam class {
+    BackgroundColor<<browser>> LightBlue
+    BackgroundColor<<server>> LightGreen
+    BackgroundColor<<protocol>> LightYellow
+    BackgroundColor<<framework>> LightCoral
+}
+
+package "code-first_browser" <<browser>> {
+    
+    class WaylandCompositor {
+        - scenegraph: SceneGraph
+        - windows: List<ApplicationWindow>
+        - inputHandler: InputHandler
+        + processInputEvent(event: InputEvent)
+        + addWindow(window: ApplicationWindow)
+        + removeWindow(windowId: String)
+        + recomposite()
+        + schedulePageFlip()
+    }
+    
+    class SceneGraph {
+        - nodes: List<SceneNode>
+        + findWindowAtPosition(x: int, y: int): ApplicationWindow
+        + transformCoordinates(screenX: int, screenY: int): WindowCoordinates
+        + updateNode(nodeId: String, transform: Transform)
+    }
+    
+    class ApplicationWindow {
+        - id: String
+        - buffer: SharedBuffer
+        - position: Position
+        - transform: Transform
+        + updateBuffer(buffer: SharedBuffer)
+        + handleEvent(event: InputEvent)
+    }
+    
+    class WebSocketClient <<protocol>> {
+        - connections: Map<String, WebSocket>
+        - encoder: JsonRpcLdEncoder
+        - decoder: JsonRpcLdDecoder
+        + sendRequest(method: String, params: Object): Promise
+        + onMessage(handler: MessageHandler)
+        + connect(url: String)
+        + disconnect()
+    }
+    
+    class JsonRpcLdEncoder <<protocol>> {
+        + encode(method: String, params: Object, context: Context): String
+        - buildContext(params: Object): JsonLdContext
+        - validateStructure(message: Object): Boolean
+    }
+    
+    class JsonRpcLdDecoder <<protocol>> {
+        + decode(message: String): JsonRpcLdMessage
+        - parseContext(context: JsonLdContext): Map
+        - extractSemantics(message: Object): Semantics
+    }
+}
+
+package "code-first_server" <<server>> {
+    
+    class WaylandServer {
+        - buffers: Map<String, SharedBuffer>
+        - compositor: WaylandCompositor
+        + createBuffer(width: int, height: int): SharedBuffer
+        + updateBuffer(bufferId: String, data: BufferData)
+        + notifyDamage(bufferId: String, region: Region)
+        + destroyBuffer(bufferId: String)
+    }
+    
+    class HeadlessBrowser {
+        - renderer: Renderer
+        - bufferManager: BufferManager
+        + render(html: String, css: String): SharedBuffer
+        + renderToBuffer(bufferId: String, content: Content)
+        + captureScreenshot(): Image
+    }
+    
+    class WebSocketHandler <<protocol>> {
+        - parser: JsonRpcLdParser
+        - validator: ShaclValidator
+        - llmManager: LlmManager
+        + handleRequest(message: String): Promise<Response>
+        + validateMessage(message: JsonRpcLdMessage): ValidationResult
+        + routeToHandler(method: String, params: Object): Object
+    }
+    
+    class JsonRpcLdParser <<protocol>> {
+        + parse(message: String): JsonRpcLdMessage
+        + extractContext(message: Object): JsonLdContext
+        + resolveIris(context: JsonLdContext): Map<String, IRI>
+    }
+    
+    class ShaclValidator <<protocol>> {
+        - shapes: Map<String, ShaclShape>
+        + validate(data: Object, shapeId: String): ValidationResult
+        + loadShapes(shapesGraph: String)
+        + getShape(method: String): ShaclShape
+    }
+    
+    class LlmManager {
+        - contextManager: ContextManager
+        - llmClient: LlmClient
+        + analyzeIntent(query: String, context: Context): Intent
+        + generateResponse(intent: Intent, data: Object): String
+        + updateContext(interaction: Interaction)
+    }
+    
+    class ContextManager {
+        - contexts: Map<String, ConversationContext>
+        + getContext(sessionId: String): ConversationContext
+        + updateContext(sessionId: String, interaction: Interaction)
+        + clearContext(sessionId: String)
+    }
+    
+    class FrameworkAdapter <<framework>> {
+        <<interface>>
+        + initialize(config: Config)
+        + handleRequest(request: Request): Response
+        + getRouter(): Router
+    }
+    
+    class RailsAdapter <<framework>> {
+        + initialize(config: Config)
+        + handleRequest(request: Request): Response
+        + getRouter(): Router
+    }
+    
+    class DjangoAdapter <<framework>> {
+        + initialize(config: Config)
+        + handleRequest(request: Request): Response
+        + getRouter(): Router
+    }
+    
+    class ExpressAdapter <<framework>> {
+        + initialize(config: Config)
+        + handleRequest(request: Request): Response
+        + getRouter(): Router
+    }
+}
+
+package "Protocol Models" <<protocol>> {
+    
+    class JsonRpcLdMessage {
+        + jsonrpc: String
+        + method: String
+        + params: Object
+        + context: JsonLdContext
+        + id: String
+    }
+    
+    class JsonLdContext {
+        + mappings: Map<String, IRI>
+        + resolve(term: String): IRI
+    }
+    
+    class ShaclShape {
+        + targetClass: IRI
+        + properties: List<PropertyShape>
+        + validate(data: Object): ValidationResult
+    }
+    
+    class ValidationResult {
+        + valid: Boolean
+        + errors: List<ValidationError>
+        + conforms: Boolean
+    }
+}
+
+' Relationships - Browser
+WaylandCompositor "1" *-- "1" SceneGraph
+WaylandCompositor "1" *-- "*" ApplicationWindow
+WaylandCompositor "1" -- "1" WebSocketClient : communicates with
+WebSocketClient "1" *-- "1" JsonRpcLdEncoder
+WebSocketClient "1" *-- "1" JsonRpcLdDecoder
+
+' Relationships - Server
+WaylandServer "1" -- "1" WaylandCompositor : provides buffers to
+WaylandServer "1" -- "1" HeadlessBrowser : uses
+WebSocketHandler "1" *-- "1" JsonRpcLdParser
+WebSocketHandler "1" *-- "1" ShaclValidator
+WebSocketHandler "1" *-- "1" LlmManager
+LlmManager "1" *-- "1" ContextManager
+FrameworkAdapter <|-- RailsAdapter
+FrameworkAdapter <|-- DjangoAdapter
+FrameworkAdapter <|-- ExpressAdapter
+WebSocketHandler "1" -- "1" FrameworkAdapter : delegates to
+
+' Relationships - Protocol
+JsonRpcLdParser ..> JsonRpcLdMessage : creates
+JsonRpcLdMessage "1" *-- "1" JsonLdContext
+ShaclValidator ..> ShaclShape : uses
+ShaclValidator ..> ValidationResult : produces
+
+' Cross-package relationships
+WebSocketClient "1" -- "1" WebSocketHandler : JSON-RPC-LD
+ApplicationWindow ..> WaylandServer : receives buffers from
+
+note right of WaylandCompositor
+  **Browser-Side Compositor**
+  Manages scenegraph, windows,
+  and input events. Composites
+  final display from multiple
+  application buffers.
+end note
+
+note right of LlmManager
+  **AI Agent Core**
+  Analyzes user intent using
+  LLM services with preserved
+  conversation context.
+end note
+
+note bottom of JsonRpcLdMessage
+  **Semantic Messages**
+  Every message includes @context
+  for explicit semantic meaning,
+  enabling machine understanding.
+end note
+
+note bottom of ShaclValidator
+  **Type Safety**
+  Validates all messages against
+  SHACL shapes to ensure data
+  integrity and contract compliance.
+end note
+
+@enduml

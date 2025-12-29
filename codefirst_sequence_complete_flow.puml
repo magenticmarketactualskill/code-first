@@ -1,0 +1,138 @@
+@startuml Complete Magnetic Application Flow
+
+title CodeFirst: Complete Magnetic (Man/Agent) Application Flow
+
+actor User
+box "code-first_browser" #LightBlue
+    participant "Wayland\nCompositor" as Compositor
+    participant "WebSocket\nClient" as WSClient
+end box
+
+box "code-first_server" #LightGreen
+    participant "WebSocket\nHandler" as WSHandler
+    participant "LLM\nManager" as LLM
+    participant "Application\nLogic" as App
+    participant "Headless\nBrowser" as HBrowser
+    participant "Wayland\nServer" as WServer
+end box
+
+participant "External\nLLM Service" as ExtLLM
+database "Database" as DB
+
+== Phase 1: User Intent Capture ==
+
+User -> Compositor : Click "Create Report" button
+activate Compositor
+Compositor -> Compositor : Process input event
+Compositor -> WSClient : Trigger action
+deactivate Compositor
+
+activate WSClient
+WSClient -> WSHandler : JSON-RPC-LD request\n{"method": "createReport", ...}
+deactivate WSClient
+
+== Phase 2: Semantic Processing ==
+
+activate WSHandler
+WSHandler -> WSHandler : Validate with SHACL
+WSHandler -> LLM : Analyze user intent
+activate LLM
+
+LLM -> ExtLLM : API call with context
+activate ExtLLM
+ExtLLM --> LLM : Intent analysis
+deactivate ExtLLM
+
+LLM --> WSHandler : Parsed intent:\n"Generate sales report for Q4"
+deactivate LLM
+
+== Phase 3: Application Logic Execution ==
+
+WSHandler -> App : Execute report generation
+activate App
+
+App -> DB : Query sales data
+activate DB
+DB --> App : Sales records
+deactivate DB
+
+App -> App : Process data\nCalculate metrics
+
+App -> HBrowser : Render report UI
+activate HBrowser
+HBrowser -> HBrowser : Generate HTML/CSS\nCreate charts
+HBrowser -> HBrowser : Render to shared buffer
+HBrowser --> App : Buffer ready
+deactivate HBrowser
+
+App --> WSHandler : Report generated
+deactivate App
+
+== Phase 4: Visual Composition ==
+
+WSHandler -> WServer : Update Wayland buffer
+activate WServer
+WServer -> Compositor : Damage notification\n(buffer updated)
+deactivate WServer
+
+activate Compositor
+Compositor -> Compositor : Recomposite screen\nwith new buffer
+
+== Phase 5: Response Communication ==
+
+Compositor -> WSClient : Request update complete
+deactivate Compositor
+
+activate WSClient
+WSClient -> WSHandler : Acknowledge
+deactivate WSClient
+
+WSHandler -> WSHandler : Build JSON-RPC-LD response
+activate WSHandler
+WSHandler -> WSClient : Response with metadata
+deactivate WSHandler
+
+activate WSClient
+WSClient -> Compositor : Update UI state
+deactivate WSClient
+
+activate Compositor
+Compositor -> User : Display complete report
+deactivate Compositor
+
+== Phase 6: Continuous Interaction ==
+
+User -> Compositor : Interact with report\n(filter, drill-down)
+activate Compositor
+note right
+  The cycle repeats:
+  - Input events via Wayland
+  - Semantic requests via JSON-RPC-LD
+  - LLM processing for complex queries
+  - Visual updates via buffer sharing
+  - Continuous context preservation
+end note
+Compositor -> Compositor : Process interaction
+deactivate Compositor
+
+note over User, DB
+  **Magnetic Application Characteristics**
+  
+  **Man (Human):**
+  - Natural interaction via UI
+  - Visual feedback via Wayland
+  - Intuitive workflows
+  
+  **Agent (AI):**
+  - Semantic understanding via JSON-RPC-LD
+  - Context-aware responses
+  - Intelligent assistance
+  
+  **Magnetic (Seamless Integration):**
+  - Unified interface
+  - Preserved context
+  - Efficient communication
+  - Real-time collaboration
+end note
+
+@enduml

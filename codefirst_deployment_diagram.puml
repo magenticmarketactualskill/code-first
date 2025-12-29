@@ -1,0 +1,111 @@
+@startuml CodeFirst Deployment Diagram
+
+skinparam node {
+    BackgroundColor<<client>> LightBlue
+    BackgroundColor<<server>> LightGreen
+    BackgroundColor<<external>> LightYellow
+}
+
+node "Client Machine" <<client>> {
+    artifact "Web Browser" {
+        component "code-first_browser" as CFB {
+            [Wayland Compositor]
+            [WebSocket Client]
+            [UI Renderer]
+        }
+    }
+}
+
+node "Application Server 1" <<server>> {
+    artifact "Rails Application" {
+        component "code-first_server (Ruby)" as CFS1 {
+            [Rails Framework]
+            [Headless Browser]
+            [Wayland Server]
+            [JSON-RPC-LD Handler]
+        }
+    }
+}
+
+node "Application Server 2" <<server>> {
+    artifact "Django Application" {
+        component "code-first_server (Python)" as CFS2 {
+            [Django Framework]
+            [Headless Browser]
+            [Wayland Server]
+            [JSON-RPC-LD Handler]
+        }
+    }
+}
+
+node "Application Server 3" <<server>> {
+    artifact "Express Application" {
+        component "code-first_server (TypeScript)" as CFS3 {
+            [Express Framework]
+            [Headless Browser]
+            [Wayland Server]
+            [JSON-RPC-LD Handler]
+        }
+    }
+}
+
+cloud "External Services" <<external>> {
+    component "LLM Service" as LLM {
+        [GPT-4]
+        [Claude]
+        [Custom Models]
+    }
+    
+    database "Shared Database" as DB {
+        [PostgreSQL]
+        [MySQL]
+        [MongoDB]
+    }
+}
+
+node "Linux Kernel" {
+    component "KMS (Kernel Mode Setting)" as KMS
+    component "evdev (Input Devices)" as EVDEV
+}
+
+' Connections
+CFB <--> CFS1 : "Wayland Protocol\n+ WebSocket\n(JSON-RPC-LD)"
+CFB <--> CFS2 : "Wayland Protocol\n+ WebSocket\n(JSON-RPC-LD)"
+CFB <--> CFS3 : "Wayland Protocol\n+ WebSocket\n(JSON-RPC-LD)"
+
+CFS1 --> LLM : "HTTPS/API"
+CFS2 --> LLM : "HTTPS/API"
+CFS3 --> LLM : "HTTPS/API"
+
+CFS1 <--> DB : "SQL/NoSQL"
+CFS2 <--> DB : "SQL/NoSQL"
+CFS3 <--> DB : "SQL/NoSQL"
+
+EVDEV --> CFB : "Input Events"
+CFB --> KMS : "Display Control"
+
+note right of CFB
+  **Client-Side Deployment**
+  - Runs in standard web browser
+  - Implements Wayland compositor
+  - Connects to multiple servers
+  - Composes unified interface
+end note
+
+note bottom of CFS1
+  **Server-Side Deployment**
+  - Multiple language options
+  - Framework integration
+  - Independent scaling
+  - Shared or isolated data
+end note
+
+note top of LLM
+  **External LLM Services**
+  - Cloud-based or self-hosted
+  - Multiple model support
+  - Context management
+  - API-based access
+end note
+
+@enduml

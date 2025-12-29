@@ -1,0 +1,75 @@
+@startuml User Input Event Handling Sequence
+
+title CodeFirst: User Input Event Handling via application_mesh
+
+actor User
+participant "Kernel\n(evdev)" as Kernel
+participant "code-first_browser\n(Wayland Compositor)" as Browser
+participant "Scenegraph" as Scene
+participant "code-first_server\n(Wayland Server)" as Server
+participant "Framework\nApplication" as App
+participant "Headless\nBrowser" as HBrowser
+participant "GPU\n(KMS)" as GPU
+
+User -> Kernel : Mouse click / Keyboard input
+activate Kernel
+Kernel -> Browser : Input event (evdev)
+deactivate Kernel
+
+activate Browser
+Browser -> Scene : Query scenegraph
+activate Scene
+Scene --> Browser : Target window & position
+deactivate Scene
+
+Browser -> Browser : Apply inverse transformations\n(screen → window coordinates)
+
+Browser -> Server : Input event\n(Wayland protocol)
+deactivate Browser
+
+activate Server
+Server -> App : Process event
+activate App
+App -> App : Update application state
+App -> HBrowser : Render updated UI
+activate HBrowser
+HBrowser -> HBrowser : Render to buffer
+HBrowser --> App : Rendering complete
+deactivate HBrowser
+
+App -> Server : Update buffer reference
+deactivate App
+
+Server -> Browser : Damage notification\n(changed regions)
+activate Browser
+deactivate Server
+
+Browser -> Browser : Recomposite screen\nusing updated buffers
+
+Browser -> GPU : Schedule pageflip (ioctl)
+activate GPU
+GPU --> Browser : Pageflip complete
+deactivate GPU
+
+Browser -> User : Display updated UI
+deactivate Browser
+
+note right of Browser
+  **Wayland Compositor Role**
+  - Receives input from kernel
+  - Manages scenegraph
+  - Transforms coordinates
+  - Routes events to correct window
+  - Composites final display
+end note
+
+note right of Server
+  **Wayland Server Role**
+  - Receives events from compositor
+  - Processes in application logic
+  - Renders in headless browser
+  - Provides updated buffers
+  - Notifies compositor of changes
+end note
+
+@enduml

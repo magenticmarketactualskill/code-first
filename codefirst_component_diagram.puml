@@ -1,0 +1,135 @@
+@startuml CodeFirst Component Diagram
+!define RECTANGLE class
+
+skinparam componentStyle rectangle
+skinparam component {
+    BackgroundColor<<browser>> LightBlue
+    BackgroundColor<<server>> LightGreen
+    BackgroundColor<<mesh>> LightYellow
+    BackgroundColor<<framework>> LightCoral
+}
+
+package "CodeFirst Architecture" {
+    
+    package "application_mesh" <<mesh>> {
+        component "code-first_browser" <<browser>> as CFB {
+            [Wayland Compositor]
+            [Application Window Manager]
+            [Input Event Handler]
+            [Screen Compositor]
+        }
+        
+        component "code-first_server" <<server>> as CFS {
+            [Framework Application]
+            [Headless Browser]
+            [Wayland Server]
+            [Buffer Manager]
+        }
+    }
+    
+    package "magentic_mesh" <<mesh>> {
+        component "Browser WebSocket Client" <<browser>> as BWS {
+            [JSON-RPC-LD Encoder]
+            [JSON-RPC-LD Decoder]
+            [WebSocket Manager]
+        }
+        
+        component "Server WebSocket Handler" <<server>> as SWS {
+            [JSON-RPC-LD Parser]
+            [SHACL Validator]
+            [LLM Context Manager]
+            [LLM Interface]
+        }
+    }
+    
+    package "Legacy Framework Support" <<framework>> {
+        component "Rails" as RAILS
+        component "Laravel" as LARAVEL
+        component "Express" as EXPRESS
+        component "Flask" as FLASK
+        component "Django" as DJANGO
+    }
+    
+    package "Language Implementations" {
+        component "Ruby Implementation" as RUBY
+        component "PHP Implementation" as PHP
+        component "TypeScript Implementation" as TS
+        component "Python Implementation" as PYTHON
+        component "Rust Implementation" as RUST
+    }
+}
+
+package "External Systems" {
+    component "Kernel (KMS/evdev)" as KERNEL
+    component "Graphics Hardware" as GPU
+    component "LLM Services" as LLM
+    database "Application Data" as DB
+}
+
+' application_mesh connections
+CFB --> CFS : "Wayland Protocol\n(Buffer Sharing)"
+CFS --> CFB : "Rendered Content\n(Video Memory Buffers)"
+KERNEL --> CFB : "Input Events"
+CFB --> GPU : "Page Flip (ioctl)"
+CFS ..> GPU : "Direct Rendering"
+
+' magentic_mesh connections
+BWS <--> SWS : "JSON-RPC-LD\n(WebSocket)"
+SWS --> LLM : "LLM API Calls"
+SWS <--> DB : "Data Access"
+
+' Integration connections
+CFB -[hidden]- BWS
+CFS -[hidden]- SWS
+
+' Framework connections
+RAILS --> RUBY : "uses"
+LARAVEL --> PHP : "uses"
+EXPRESS --> TS : "uses"
+FLASK --> PYTHON : "uses"
+DJANGO --> PYTHON : "uses"
+
+' Implementation to server connections
+RUBY ..> CFS : "implements"
+PHP ..> CFS : "implements"
+TS ..> CFS : "implements"
+PYTHON ..> CFS : "implements"
+RUST ..> CFS : "implements"
+
+RAILS ..> CFS : "integrates"
+LARAVEL ..> CFS : "integrates"
+EXPRESS ..> CFS : "integrates"
+FLASK ..> CFS : "integrates"
+DJANGO ..> CFS : "integrates"
+
+note right of CFB
+  **Browser-Side Components**
+  - Acts as Wayland Compositor
+  - Manages multiple app windows
+  - Handles user input events
+  - Composes final UI
+end note
+
+note right of CFS
+  **Server-Side Components**
+  - Renders in headless browser
+  - Provides Wayland buffers
+  - Runs application logic
+  - Manages framework integration
+end note
+
+note bottom of BWS
+  **Semantic Communication**
+  - Mandatory @context in messages
+  - Type-safe data exchange
+  - Machine-readable semantics
+end note
+
+note bottom of SWS
+  **LLM & Validation**
+  - SHACL shape validation
+  - Context management
+  - Intent analysis
+end note
+
+@enduml

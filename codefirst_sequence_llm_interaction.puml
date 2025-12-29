@@ -1,0 +1,145 @@
+@startuml LLM Interaction via magentic_mesh
+
+title CodeFirst: AI Agent Interaction via magentic_mesh
+
+actor User
+participant "code-first_browser\n(WebSocket Client)" as Browser
+participant "JSON-RPC-LD\nEncoder" as Encoder
+participant "WebSocket\nConnection" as WS
+participant "JSON-RPC-LD\nParser" as Parser
+participant "SHACL\nValidator" as Validator
+participant "code-first_server\n(LLM Manager)" as Server
+participant "LLM Context\nManager" as Context
+participant "LLM Service\n(GPT-4/Claude)" as LLM
+participant "Application\nLogic" as App
+
+User -> Browser : "Create sales dashboard"
+activate Browser
+
+Browser -> Encoder : Create request
+activate Encoder
+Encoder -> Encoder : Build JSON-RPC-LD message\nwith @context
+note right
+  {
+    "jsonrpc": "2.0",
+    "method": "analyzeUserIntent",
+    "params": {
+      "@context": {
+        "query": "http://cf.org/query",
+        "userId": "http://cf.org/userId"
+      },
+      "query": "Create sales dashboard",
+      "userId": 12345
+    },
+    "id": 1
+  }
+end note
+Encoder --> Browser : JSON-RPC-LD request
+deactivate Encoder
+
+Browser -> WS : Send via WebSocket
+activate WS
+WS -> Parser : Receive message
+deactivate WS
+
+activate Parser
+Parser -> Parser : Parse JSON-RPC-LD
+Parser -> Validator : Validate against SHACL shapes
+activate Validator
+Validator -> Validator : Check structure & types
+Validator --> Parser : Validation passed
+deactivate Validator
+
+Parser -> Server : Validated request
+deactivate Parser
+
+activate Server
+Server -> Context : Get conversation context
+activate Context
+Context --> Server : Previous interactions
+deactivate Context
+
+Server -> LLM : Analyze intent with context
+activate LLM
+LLM -> LLM : Process natural language\nUnderstand intent
+LLM --> Server : Analysis result
+deactivate LLM
+
+Server -> App : Execute actions\n(query DB, generate charts)
+activate App
+App -> App : Retrieve sales data\nGenerate visualizations
+App --> Server : Action results
+deactivate App
+
+Server -> Context : Update context
+activate Context
+Context -> Context : Store interaction
+Context --> Server : Context updated
+deactivate Context
+
+Server -> Parser : Create response
+activate Parser
+Parser -> Parser : Build JSON-RPC-LD response\nwith @context
+note left
+  {
+    "jsonrpc": "2.0",
+    "result": {
+      "@context": {
+        "intent": "http://cf.org/intent",
+        "actions": "http://cf.org/actions"
+      },
+      "intent": "data_visualization",
+      "confidence": 0.95,
+      "actions": ["dashboard_created"],
+      "dashboardId": "dash-789"
+    },
+    "id": 1
+  }
+end note
+
+Parser -> Validator : Validate response
+activate Validator
+Validator --> Parser : Valid
+deactivate Validator
+
+Parser -> WS : Send response
+deactivate Parser
+deactivate Server
+
+activate WS
+WS -> Encoder : Receive message
+deactivate WS
+
+activate Encoder
+Encoder -> Encoder : Decode JSON-RPC-LD
+Encoder --> Browser : Parsed response
+deactivate Encoder
+
+Browser -> User : Display dashboard
+deactivate Browser
+
+note right of Encoder
+  **Semantic Encoding**
+  - Mandatory @context
+  - Type-safe messages
+  - Machine-readable
+  - Prevents ambiguity
+end note
+
+note right of Validator
+  **SHACL Validation**
+  - Structure checking
+  - Type validation
+  - Constraint enforcement
+  - Clear error messages
+end note
+
+note right of Context
+  **Context Management**
+  - Conversation history
+  - User preferences
+  - Session state
+  - Semantic annotations
+end note
+
+@enduml
